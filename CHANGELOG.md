@@ -1,5 +1,9 @@
 # main
 
+# [0.9.45] - July 14th, 2026
+
+[0.9.45]: https://github.com/lsegal/yard/compare/v0.9.44...v0.9.45
+
 - Use `@param` types to document generated `Struct.new` and `Data.define` members (#1684)
 - Add compatibility with RDoc 8
 - Fix TypesExplainer parsing of types following Hash collections (#1688)
