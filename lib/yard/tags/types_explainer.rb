@@ -176,17 +176,25 @@ module YARD
 
         # @return [Array(Boolean, Array<Type>)] - finished, types
         def parse(until_tokens: [:parse_end])
+          parse_until(until_tokens).first
+        end
+
+        private
+
+        def parse_until(until_tokens)
           current_parsed_types = []
           type = nil
           name = nil
           finished = false
-          parse_with_handlers do |token_type, token|
+          end_token = nil
+          types = parse_with_handlers do |token_type, token|
             case token_type
             when *until_tokens
               raise SyntaxError, "expecting name, got '#{token}'" if name.nil?
               type = create_type(name) unless type
               current_parsed_types << type
               finished = true
+              end_token = token_type
             when :type_name
               raise SyntaxError, "expecting END, got name '#{token}'" if name
               name = token
@@ -199,7 +207,8 @@ module YARD
             when :fixed_collection_start, :collection_start
               name ||= "Array"
               klass = token_type == :collection_start ? CollectionType : FixedCollectionType
-              type = klass.new(name, parse(until_tokens: [:fixed_collection_end, :collection_end, :parse_end]))
+              nested_types, = parse_until([:fixed_collection_end, :collection_end, :parse_end])
+              type = klass.new(name, nested_types)
             when :hash_collection_start
               name ||= "Hash"
               type = parse_hash_collection(name)
@@ -207,9 +216,8 @@ module YARD
 
             [finished, current_parsed_types]
           end
+          [types, end_token]
         end
-
-        private
 
         # @return [Array<Type>]
         def parse_with_handlers
@@ -245,9 +253,10 @@ module YARD
             when :hash_collection_value
               # => - current keys map to the next value(s)
               raise SyntaxError, "no keys before =>" if current_keys.empty?
-              values = parse(until_tokens: [:hash_collection_value_end, :parse_end])
+              values, end_token = parse_until([:hash_collection_value_end, :hash_collection_end, :parse_end])
               key_value_pairs << [current_keys, values]
               current_keys = []
+              finished = end_token != :hash_collection_value_end
             when :hash_collection_end, :parse_end
               # End of hash
               finished = true

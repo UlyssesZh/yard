@@ -1,5 +1,7 @@
 # main
 
+- Fix TypesExplainer parsing of types following Hash collections (#1688)
+
 # [0.9.44] - May 25th, 2026
 
 [0.9.44]: https://github.com/lsegal/yard/compare/v0.9.43...v0.9.44

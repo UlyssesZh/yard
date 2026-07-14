@@ -208,6 +208,16 @@ RSpec.describe YARD::Tags::TypesExplainer do
       expect(type.first.name).to eq "Hash"
     end
 
+    it "parses types after a hash collection as top-level types" do
+      types = parse("Hash{Symbol => String}, nil")
+
+      expect(types.size).to eq 2
+      expect(types.first).to be_a(YARD::Tags::TypesExplainer::HashCollectionType)
+      expect(types.first.key_types.map(&:name)).to eq ["Symbol"]
+      expect(types.first.value_types.map(&:name)).to eq ["String"]
+      expect(types.last.name).to eq "nil"
+    end
+
     it "parses constant values" do
       type = parse("false, true, nil, 4, :foo")
       expect(type.map(&:name)).to eq ['false', 'true', 'nil', '4', ':foo']
