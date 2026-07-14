@@ -1,5 +1,6 @@
 # main
 
+- Use `@param` types to document generated `Struct.new` and `Data.define` members (#1684)
 - Add compatibility with RDoc 8
 - Fix TypesExplainer parsing of types following Hash collections (#1688)
 - Fix HTML generation for RBS constants without source values (#1686)
