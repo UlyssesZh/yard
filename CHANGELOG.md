@@ -5,6 +5,7 @@
 - Fix TypesExplainer parsing of types following Hash collections (#1688)
 - Fix HTML generation for RBS constants without source values (#1686)
 - Fix method redefinition warnings when loading YARD with Ruby warnings enabled (#1687)
+- Improve sanitization of `yard server` request paths
 
 # [0.9.44] - May 25th, 2026
 
