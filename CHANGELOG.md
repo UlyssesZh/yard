@@ -1,5 +1,6 @@
 # main
 
+- Add compatibility with RDoc 8
 - Fix TypesExplainer parsing of types following Hash collections (#1688)
 
 # [0.9.44] - May 25th, 2026
