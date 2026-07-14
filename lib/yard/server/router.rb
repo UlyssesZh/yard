@@ -179,7 +179,7 @@ module YARD
       # @param (see #route_docs)
       # @return [Hash] finalized options
       def final_options(library, paths)
-        path = File.cleanpath(paths.join('/')).gsub(%r{^(\.\./)+}, '')
+        path = Server.clean_path(paths.join('/'))
         adapter.options.merge(:library => library, :path => path)
       end
     end

@@ -61,6 +61,12 @@ RSpec.describe YARD::Server::Commands::Base do
       expect(b).to eq ['a/b/c']
     end
 
+    it "sanitizes path_info using the platform's alternate separator" do
+      cmd = MyProcCommand.new { self.body = path }
+      _, _, b = *cmd.call(mock_request('/..\\..\\abc'))
+      expect(b).to eq ['abc']
+    end
+
     it "handles a NotFoundError and use message as body" do
       cmd = MyProcCommand.new { raise NotFoundError, "hello world" }
       s, _, b = *cmd.call(mock_request('/foo'))

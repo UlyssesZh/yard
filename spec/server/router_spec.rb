@@ -81,6 +81,11 @@ RSpec.describe YARD::Server::Router do
       expect(@command.library).to eq @projects[0]
     end
 
+    it "sanitizes alternate path separators in routed paths" do
+      route_to('/mydocs/foo/project/1.0.0/..\\abc', DisplayObjectCommand)
+      expect(@command.path).to eq 'abc'
+    end
+
     it "routes /docs/name/ to latest version of library" do
       route_to('/mydocs/foo/project', DisplayObjectCommand)
       expect(@command.library).to eq @projects[1]
@@ -118,6 +123,31 @@ RSpec.describe YARD::Server::Router do
 
     it "searches static files for non-existent library" do
       route_to('/mydocs/foo/notproject', RootRequestCommand)
+    end
+  end
+
+  describe "#final_options" do
+    it "returns a relative path for traversal and rooted inputs" do
+      router = MyRouterSpecRouter.new(@adapter)
+      paths = [
+        ['..', 'abc'],
+        ['..\\abc'],
+        ['a', '..\\..\\abc'],
+        ['/abc'],
+        ['C:\\abc'],
+        ['C:abc'],
+        ['\\\\host\\share\\abc']
+      ]
+
+      expect(paths.map {|path| router.send(:final_options, nil, path)[:path] }).to eq(
+        ['abc', 'abc', 'abc', 'abc', 'abc', 'abc', 'host/share/abc']
+      )
+    end
+
+    it "preserves Ruby namespace separators" do
+      router = MyRouterSpecRouter.new(@adapter)
+      options = router.send(:final_options, nil, ['F::Bar'])
+      expect(options[:path]).to eq 'F::Bar'
     end
   end
 end
