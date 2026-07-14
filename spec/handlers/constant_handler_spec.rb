@@ -153,6 +153,49 @@ RSpec.describe "YARD::Handlers::Ruby::#{LEGACY_PARSER ? "Legacy::" : ""}Constant
     expect(Registry.at('A::B::C').type).to eq :constant
   end
 
+  it "uses @param types for Struct.new readers and writers" do
+    Registry.clear
+    YARD.parse_string <<-eof
+      # @param name [String]
+      # @param active [Boolean]
+      Person = Struct.new(:name, :active)
+    eof
+
+    expect(log.io.string).to eq ""
+    expect(Registry.at("Person#name").docstring).to eq "Returns the value of attribute name"
+    expect(Registry.at("Person#name").tag(:return).types).to eq ["String"]
+    expect(Registry.at("Person#name=").tag(:param).types).to eq ["String"]
+    expect(Registry.at("Person#name=").tag(:return).types).to eq ["String"]
+    expect(Registry.at("Person#active").tag(:return).types).to eq ["Boolean"]
+    expect(Registry.at("Person#active=").tag(:param).types).to eq ["Boolean"]
+  end
+
+  it "uses @param types for Data.define readers" do
+    Registry.clear
+    YARD.parse_string <<-eof
+      # @param name [String]
+      # @param active [Boolean]
+      PersonData = Data.define(:name, :active)
+    eof
+
+    expect(log.io.string).to eq ""
+    expect(Registry.at("PersonData#name").docstring).to eq "Returns the value of attribute name"
+    expect(Registry.at("PersonData#name").tag(:return).types).to eq ["String"]
+    expect(Registry.at("PersonData#active").tag(:return).types).to eq ["Boolean"]
+  end if HAVE_RIPPER
+
+  it "prefers @attr types over @param types for Struct.new members" do
+    Registry.clear
+    YARD.parse_string <<-eof
+      # @param value [String]
+      # @attr [Integer] value
+      ParamAndAttrStruct = Struct.new(:value)
+    eof
+
+    expect(Registry.at("ParamAndAttrStruct#value").tag(:return).types).to eq ["Integer"]
+    expect(Registry.at("ParamAndAttrStruct#value=").tag(:param).types).to eq ["Integer"]
+  end
+
   it "preserves @!parse attr_reader documentation for Data.define members" do
     Registry.clear
     YARD.parse_string <<-eof

@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# Helper methods to parse @attr_* tags on a class.
+# Helper methods to document generated Struct and Data members.
 #
 # @deprecated The use of +@attr+ tags are deprecated since 0.8.0 in favour of
 #   the +@!attribute+ directive. This module should not be relied on.
@@ -17,6 +17,26 @@ module YARD::Handlers::Ruby::StructHandlerMethods
   def member_tag_for_member(klass, member, type = :read)
     specific_tag = type == :read ? :attr_reader : :attr_writer
     (klass.tags(specific_tag) + klass.tags(:attr)).find {|tag| tag.name == member }
+  end
+
+  # Extracts the user's defined @param tag for a given generated member.
+  #
+  # @param [ClassObject] klass the class whose tags we're searching
+  # @param [String] member the name of the struct or data member we need
+  # @return [Tags::Tag, nil] the matching tag, or nil if not found
+  def parameter_tag_for_member(klass, member)
+    klass.tags(:param).find {|tag| tag.name == member }
+  end
+
+  # Returns the tag that supplies a generated member's type. Existing @attr*
+  # tags take precedence over the more concise @param form.
+  #
+  # @param [ClassObject] klass the class whose tags we're searching
+  # @param [String] member the name of the struct or data member we need
+  # @param [Symbol] type reader method, or writer method?
+  # @return [Tags::Tag, nil] the tag supplying the type, or nil if not found
+  def type_tag_for_member(klass, member, type = :read)
+    member_tag_for_member(klass, member, type) || parameter_tag_for_member(klass, member)
   end
 
   # Retrieves all members defined in @attr* tags
@@ -61,7 +81,7 @@ module YARD::Handlers::Ruby::StructHandlerMethods
   # @return [String] a docstring to be attached to the getter method for this member
   def add_reader_tags(klass, new_method, member)
     member_tag = member_tag_for_member(klass, member, :read)
-    return_type = return_type_from_tag(member_tag)
+    return_type = return_type_from_tag(type_tag_for_member(klass, member, :read))
     getter_doc_text = member_tag ? member_tag.text : "Returns the value of attribute #{member}"
     new_method.docstring.replace(getter_doc_text)
     new_method.add_tag YARD::Tags::Tag.new(:return, "the current value of #{member}", return_type)
@@ -76,7 +96,7 @@ module YARD::Handlers::Ruby::StructHandlerMethods
   # @return [String] a docstring to be attached to the setter method for this member
   def add_writer_tags(klass, new_method, member)
     member_tag = member_tag_for_member(klass, member, :write)
-    return_type = return_type_from_tag(member_tag)
+    return_type = return_type_from_tag(type_tag_for_member(klass, member, :write))
     setter_doc_text = member_tag ? member_tag.text : "Sets the attribute #{member}"
     new_method.docstring.replace(setter_doc_text)
     new_method.add_tag YARD::Tags::Tag.new(:param, "the value to set the attribute #{member} to.", return_type, "value")
@@ -104,7 +124,7 @@ module YARD::Handlers::Ruby::StructHandlerMethods
   def create_writer(klass, member)
     # We want to convert these members into attributes just like
     # as if they were declared using attr_accessor.
-    new_meth = register MethodObject.new(klass, "#{member}=", :instance) do |o|
+    new_meth = register_struct_member_method MethodObject.new(klass, "#{member}=", :instance) do |o|
       o.parameters = [['value', nil]]
       o.signature ||= "def #{member}=(value)"
       o.source ||= "#{o.signature}\n  @#{member} = value\nend"
@@ -119,7 +139,7 @@ module YARD::Handlers::Ruby::StructHandlerMethods
   # @param [ClassObject] klass the class to attach the method to
   # @param [String] member the name of the member we're generating a method for
   def create_reader(klass, member)
-    new_meth = register MethodObject.new(klass, member, :instance) do |o|
+    new_meth = register_struct_member_method MethodObject.new(klass, member, :instance) do |o|
       o.signature ||= "def #{member}"
       o.source ||= "#{o.signature}\n  @#{member}\nend"
     end
@@ -139,5 +159,21 @@ module YARD::Handlers::Ruby::StructHandlerMethods
       create_writer klass, member if create_member_method?(klass, member, :write)
       create_reader klass, member if create_member_method?(klass, member, :read)
     end
+  end
+
+  # Registers an auto-generated member method without reapplying the class's
+  # docstring to it. The generated reader or writer receives its own docstring
+  # and tags immediately after registration.
+  def register_struct_member_method(method, &block)
+    previous = @registering_struct_member_method
+    @registering_struct_member_method = true
+    register(method, &block)
+  ensure
+    @registering_struct_member_method = previous
+  end
+
+  def register_docstring(object, docstring = statement.comments, stmt = statement)
+    docstring = nil if @registering_struct_member_method
+    super(object, docstring, stmt)
   end
 end
