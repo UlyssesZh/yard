@@ -379,6 +379,7 @@ module YARD
         # entries from corrupting source ranges of later hash literals and brace blocks.
         # Bare hash patterns (key: val without braces) fire no brace scanner events, so
         # we only clean up when @map[:rbrace] confirms a closing brace was scanned.
+        begin; undef on_hshptn; rescue NameError; end
         def on_hshptn(*args)
           if (@map[:rbrace] ||= []).any?
             (@map[:lbrace] ||= []).pop
@@ -443,6 +444,7 @@ module YARD
         # on_rbracket scanner events. The corresponding parser events are on_aryptn/on_fndptn
         # (not on_aref), so we must clean up the bracket maps to prevent stale entries from
         # corrupting source ranges of later array indexing expressions.
+        begin; undef on_aryptn; rescue NameError; end
         def on_aryptn(*args)
           (@map[:lbracket] ||= []).pop
           (@map[:aref] ||= []).shift
@@ -451,6 +453,7 @@ module YARD
           AstNode.new(:aryptn, args)
         end
 
+        begin; undef on_fndptn; rescue NameError; end
         def on_fndptn(*args)
           (@map[:lbracket] ||= []).pop
           (@map[:aref] ||= []).shift

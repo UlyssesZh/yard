@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'open3'
 
 RSpec.describe YARD::Parser::Ruby::RubyParser do
   def stmt(stmt)
@@ -11,6 +12,15 @@ RSpec.describe YARD::Parser::Ruby::RubyParser do
 
   def tokenize(stmt)
     YARD::Parser::Ruby::RubyParser.new(stmt, nil).parse.tokens
+  end
+
+  it "loads without redefining parser event methods" do
+    _stdout, stderr, status = Open3.capture3(
+      RbConfig.ruby, '-w', "-I#{YARD::ROOT}", '-e', "require 'yard'"
+    )
+
+    expect(status).to be_success
+    expect(stderr).not_to include('method redefined')
   end
 
   describe "#parse" do
