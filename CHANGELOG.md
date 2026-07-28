@@ -1,5 +1,7 @@
 # main
 
+- Fix duplicate "View source" links after client-side navigation in default HTML template
+
 # [0.9.45] - July 14th, 2026
 
 [0.9.45]: https://github.com/lsegal/yard/compare/v0.9.44...v0.9.45
